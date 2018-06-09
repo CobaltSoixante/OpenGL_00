@@ -5,6 +5,10 @@ I will have to check with him if it is OK for me to check this material into Git
 (He has understandable reasons for MAYBE wanting to keep the written code to himself). 
 */
 
+/* HISTORY:
+9/06/2018 (Sat) - Beginning changes to come into line with TheChernoProct video "How I Deal with Shaders in OpenGL" ( https://www.youtube.com/watch?v=2pv0Fbo-7ms&index=8&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2 ). 
+*/
+
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
