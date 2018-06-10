@@ -4,16 +4,50 @@ This source is based on stuff I garnered from watching videos of "TheChernoProje
 I will have to check with him if it is OK for me to check this material into GitHub. Otherwise - I may need to obliterate it.
 (He has understandable reasons for MAYBE wanting to keep the written code to himself). 
 */
-
 /* HISTORY:
 9/06/2018 (Sat) - Beginning changes to come into line with TheChernoProct video "How I Deal with Shaders in OpenGL" ( https://www.youtube.com/watch?v=2pv0Fbo-7ms&index=8&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2 ). 
+10/06/2018 (Sun) - Have modified the code to read in the configuration file I read off the Cherno project yesterday.
 */
 
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
 #include <iostream>
+#include <fstream> // so we can read our invented 'Basic.shader' souce-file.
+#include <string> // Dunno why this gut suddenly included <string>, it seems to be implicitly included in <iostream> all this time anyway...
+#include <sstream> // This is so our "ParseShader" function can create our shader programs for us.
 using namespace std;
+
+struct ShaderProgramSource {
+	string VertexSource;
+	string FragmentSource;
+};
+static ShaderProgramSource ParseShader(
+	const string& filepath // Name of the shader program file we invented.
+	)
+{
+	ifstream stream(filepath);
+	enum class ShaderType
+	{
+		NONE = -1, VERTEX = 0, FRAGMENT = 1, 
+	};
+	string line;
+	stringstream ss[2];
+	ShaderType type = ShaderType::NONE;
+	while (getline(stream, line)) {
+		if (line.find("#shader") != string::npos) { // Fileter out this fake "#shader ..." syntax we "invented"... 
+			if (line.find("vertex") != string::npos)
+				type = ShaderType::VERTEX;
+			else if (line.find("fragment") != string::npos)
+				type = ShaderType::FRAGMENT;
+		}
+		else {
+			ss[(int(type))] << line << '\n';
+		}
+	}
+
+	return { ss[0].str(), ss[1].str() };
+}
 
 static unsigned int CompileShader(unsigned int type, const string& source) {
 	unsigned int id = glCreateShader(type);
@@ -125,6 +159,7 @@ int main(void)
 	);
 
 	/* CREATE OUR 2 SHADERS (VERTEX & FRAGMENT) */
+	/* 10/06/2018 - comment out strings: we now use "Basic.shader" file that we invented.
 	string vertexShader =
 		"#version 330 core\n" // GLSL (OpenGL shading language), v330, core=we can't use deprecated functions (so we are essentially using "latest&greates").
 		"\n" // newline for aestetics
@@ -145,8 +180,16 @@ int main(void)
 		"	color = vec4(1.0, 0.0, 0.0, 1.0);" // color=RED, 4th parameter is ALPHA value (we set to 1.0). - params here are RGBA .
 		"}\n"
 		;
-
-	unsigned int shader = CreateShader(vertexShader, fragmentShader);
+	*/
+	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
+	cout << "VERTEX" << endl;
+	cout << source.VertexSource << endl;
+	cout << "FRAGMENT" << endl;
+	cout << source.FragmentSource << endl;
+	//unsigned int shader = CreateShader(vertexShader, fragmentShader);
+	//glUseProgram(shader); // Bind our shader.
+	//unsigned int shader = CreateShader(vertexShader, fragmentShader);
+	unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
 	glUseProgram(shader); // Bind our shader.
 
 #endif // GLEW
@@ -179,7 +222,8 @@ int main(void)
 	}
 
 #ifdef GLEW // For good measure:
-	glDeleteShader(shader); // this should actually be glDeleteProgram(shader);
+	//glDeleteShader(shader); // this should actually be glDeleteProgram(shader);
+	glDeleteProgram(shader);
 #endif GLEW
 
 	glfwTerminate();
