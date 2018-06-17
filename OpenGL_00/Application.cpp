@@ -7,6 +7,7 @@ I will have to check with him if it is OK for me to check this material into Git
 /* HISTORY:
 9/06/2018 (Sat) - Beginning changes to come into line with TheChernoProct video "How I Deal with Shaders in OpenGL" ( https://www.youtube.com/watch?v=2pv0Fbo-7ms&index=8&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2 ). 
 10/06/2018 (Sun) - Have modified the code to read in the configuration file I read off the Cherno project yesterday.
+16/06/2018 (Sat) - Index Buffers: how every thing in OpenGL is based on TRIANGLES (even if they are SQUARES or 3D), and our "plight" to reduce our vertixes ti "index buffers".
 */
 
 #include <GL/glew.h>
@@ -136,17 +137,29 @@ int main(void)
 
 	// GLEW / VERTEX BUFFER EXERCISE:
 	// each line is a VERTEX (= a point):
-	float positions[6] = {
+	float positions[] = {
+		/*TRIANGLE indexes*/ /*
 		+0.0f,  +0.5f,
 		- 0.5f, -0.5f,
 		+ 0.5f, -0.5f,
+		*/
+		/*SQUARE indexes*/
+		-0.5f, -0.5f, // 0 index
+		+0.5f, -0.5f, // 1 index
+		+0.5f,  +0.5f, // 2 index
+		-0.5f, +0.5f, // 3 index
+	};
+
+	unsigned int indeces[] = {
+		0, 1, 2, // 1st triangle (on right)
+		2, 3, 0, // 2nd triangle (on left)
 	};
 
 	// GLEW: see documentation on docs.gl
 	unsigned int buffer;
 	glGenBuffers(1, &buffer); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
 	glBindBuffer(GL_ARRAY_BUFFER, buffer); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
-	glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(float), positions, GL_STATIC_DRAW); // Specify how LARGE the buffer will be (6 floats); GL_STATIC_DRAW - means contents will be modified once & used many times.
+	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW); // Specify how LARGE the buffer will be (6 floats); GL_STATIC_DRAW - means contents will be modified once & used many times.
 
 	glEnableVertexAttribArray(0); // Enable vertex #0.
 	glVertexAttribPointer(
@@ -158,7 +171,12 @@ int main(void)
 		0			// Point/index to First attribute
 	);
 
-	/* CREATE OUR 2 SHADERS (VERTEX & FRAGMENT) */
+	/* SQUARE */
+	unsigned int ibo; // IBO = Index Buffer Object
+	glGenBuffers(1, &ibo); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indeces), indeces, GL_STATIC_DRAW); // SEND DATA TO GPU.
+																				 /* CREATE OUR 2 SHADERS (VERTEX & FRAGMENT) */
 	/* 10/06/2018 - comment out strings: we now use "Basic.shader" file that we invented.
 	string vertexShader =
 		"#version 330 core\n" // GLSL (OpenGL shading language), v330, core=we can't use deprecated functions (so we are essentially using "latest&greates").
@@ -210,8 +228,9 @@ int main(void)
 #endif // GLFW
 
 #ifdef GLEW /* DRAW USING GLEW */
-		glDrawArrays(GL_TRIANGLES, 0, 3); // Drawing a GL_TRIANGLES, beginning at vertex#0 (the 1st one), and 3 vertexes ('cuz this is a triangle).
+		//glDrawArrays(GL_TRIANGLES, 0, 6); // Drawing a GL_TRIANGLES, beginning at vertex#0 (the 1st one), and 3 vertexes ('cuz this is a triangle).
 			// This will KNOW to draw our PARTICULAR triangle due to the "glBindBuffer(GL_ARRAY_BUFFER, buffer);" statement prior this loop.
+		glDrawElements(GL_TRIANGLES, 6/*indices*/, GL_UNSIGNED_INT /*typeOf data in the indeces buffer*/ , nullptr/*we did a 'glBindBuffer()' to 'ibo' so no need to explicitly specify anything here.*/);
 #endif // GLEW
 
 		/* Swap front and back buffers */
