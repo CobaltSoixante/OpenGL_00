@@ -9,6 +9,7 @@ I will have to check with him if it is OK for me to check this material into Git
 10/06/2018 (Sun) - Have modified the code to read in the configuration file I read off the Cherno project yesterday.
 16/06/2018 (Sat) - Index Buffers: how every thing in OpenGL is based on TRIANGLES (even if they are SQUARES or 3D), and our "plight" to reduce our vertixes ti "index buffers".
 23/06/2018 (Sat) - Dealing with errors in OpenGL.
+23/06/2018 (Sat_ - USING "UNIFORM" VARIABLES IN SHADERS.
 */
 
 #include <GL/glew.h>
@@ -145,6 +146,10 @@ int main(void)
 	/* Make the window's context current */
 	glfwMakeContextCurrent(window);
 
+	/* Moderate the window's refresh rate to be in sync with our VSYNC -
+	this is for when we do the UNIFORM variable tutorial, so our color-change animation changes at a reasonable/aesthetic rate. */
+	glfwSwapInterval(1);
+
 #ifdef GLEW
 	/*
 	SETUP GLEW data.
@@ -193,9 +198,9 @@ int main(void)
 
 	/* SQUARE */
 	unsigned int ibo; // IBO = Index Buffer Object
-	glGenBuffers(1, &ibo); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indeces), indeces, GL_STATIC_DRAW); // SEND DATA TO GPU.
+	GLCall(glGenBuffers(1, &ibo)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
+	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
+	GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indeces), indeces, GL_STATIC_DRAW)); // SEND DATA TO GPU.
 																				 /* CREATE OUR 2 SHADERS (VERTEX & FRAGMENT) */
 	/* 10/06/2018 - comment out strings: we now use "Basic.shader" file that we invented.
 	string vertexShader =
@@ -228,10 +233,19 @@ int main(void)
 	//glUseProgram(shader); // Bind our shader.
 	//unsigned int shader = CreateShader(vertexShader, fragmentShader);
 	unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-	glUseProgram(shader); // Bind our shader.
+	GLCall(glUseProgram(shader)); // Bind our shader.
+
+	// USING "UNIFORM" VARIABLES IN SHADERS:
+	GLCall(int location = glGetUniformLocation(shader, "u_Color")); // retrieve the location/reference of the custom "u_Color" variable I created.
+	ASSERT(-1 != location); // Ensure the Uniform "u_Color" variable actually exists (it doesn't always have to, if we didn't explicitly USE it in our shader code).
+	//GLCall(glUniform4f(location, 0.2, 0.3, 0.8, 1.0));  // set my uniform variable with the sam BLUE color my "FRAGMENT" shader had originally hard-coded.
+	GLCall(glUniform4f(location, 0.8f, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
 
 #endif // GLEW
 
+	// A couple of variables to "animate" the color in our "for-loop" and make it more exciting.
+	float r = 0.0f;
+	float increment = 0.05f;
 	/* Loop until the user closes the window */
 	while (!glfwWindowShouldClose(window))
 	{
@@ -252,7 +266,15 @@ int main(void)
 			// This will KNOW to draw our PARTICULAR triangle due to the "glBindBuffer(GL_ARRAY_BUFFER, buffer);" statement prior this loop.
 		// AM NOW USING THE PRESENTER'S ERROR CHECKING MECHANISMS...
 		//GLClearError(); // Just inseting error-checking code fro the error-checcing video...
+		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
 		GLCall( glDrawElements(GL_TRIANGLES, 6/*indices*/, GL_UNSIGNED_INT /*typeOf data in the indeces buffer*/, nullptr/*we did a 'glBindBuffer()' to 'ibo' so no need to explicitly specify anything here.*/) );
+
+		if (r > 1.0f)
+			increment = -0.05f;
+		if (r < 0.0f)
+			increment = +0.05f;
+		r += increment;
+
 		//ASSERT(GLLogCall()); // Just inseting error-checking code fro the error-checcing video...
 #endif // GLEW
 
