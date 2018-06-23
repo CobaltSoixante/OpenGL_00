@@ -8,6 +8,7 @@ I will have to check with him if it is OK for me to check this material into Git
 9/06/2018 (Sat) - Beginning changes to come into line with TheChernoProct video "How I Deal with Shaders in OpenGL" ( https://www.youtube.com/watch?v=2pv0Fbo-7ms&index=8&list=PLlrATfBNZ98foTJPJ_Ev03o2oq3-GGOS2 ). 
 10/06/2018 (Sun) - Have modified the code to read in the configuration file I read off the Cherno project yesterday.
 16/06/2018 (Sat) - Index Buffers: how every thing in OpenGL is based on TRIANGLES (even if they are SQUARES or 3D), and our "plight" to reduce our vertixes ti "index buffers".
+23/06/2018 (Sat) - Dealing with errors in OpenGL.
 */
 
 #include <GL/glew.h>
@@ -18,6 +19,25 @@ I will have to check with him if it is OK for me to check this material into Git
 #include <string> // Dunno why this gut suddenly included <string>, it seems to be implicitly included in <iostream> all this time anyway...
 #include <sstream> // This is so our "ParseShader" function can create our shader programs for us.
 using namespace std;
+
+// Just inseting error-checking code fro the error-checcing video...
+// ... The upper-case 'GL' is an indication to US that this is our own custom code (as opposed to lower-case 'gl' which is the prefix for bona-fide OpenGL funcs).
+#define ASSERT(x) if(!(x)) __debugbreak();
+#define GLCall(x) /*'x' is a function call we call this macro with*/ \
+	x; /*Make the function call*/ \
+	ASSERT( GLLogCall(#x, __FILE__, __LINE__) )
+static void GLClearError(void) {
+	while (glGetError() != GL_NO_ERROR);
+}
+static bool GLLogCall(const char* function, const char* file, const int line) {
+	while (GLenum error = glGetError() != GL_NO_ERROR)
+	{
+		cout << "[OpenGL Error] " << '(' << error << ')' << "=(0x" << hex << error <<')'
+			<< function << ' ' << file << ':' << line << endl;
+		return false;
+	}
+	return true;
+}
 
 struct ShaderProgramSource {
 	string VertexSource;
@@ -108,9 +128,9 @@ int main(void)
 	GLFWwindow* window;
 
 	//#define GLFW
-	#define GLEW
+#define GLEW
 
-	/* Initialize the library (required for BOTH GLFW & GLEW) */
+/* Initialize the library (required for BOTH GLFW & GLEW) */
 	if (!glfwInit())
 		return -1;
 
@@ -132,7 +152,7 @@ int main(void)
 	*/
 	if (glewInit() != GLEW_OK) // GLEW
 		cout << "glewInit() ERROR!" << endl;
-	
+
 	cout << glGetString(GL_VERSION) << endl;
 
 	// GLEW / VERTEX BUFFER EXERCISE:
@@ -167,7 +187,7 @@ int main(void)
 		2,	// # of compoenents per attribute
 		GL_FLOAT,	// type of data
 		GL_FALSE,	// FALSE: we don't want these to be normalized, thay are ALREADY floats...
-		sizeof(float)*2,	// STRIDE: number of vytes between each vertex. (= how many bytes to go to get to the next vertex).
+		sizeof(float) * 2,	// STRIDE: number of vytes between each vertex. (= how many bytes to go to get to the next vertex).
 		0			// Point/index to First attribute
 	);
 
@@ -181,7 +201,7 @@ int main(void)
 	string vertexShader =
 		"#version 330 core\n" // GLSL (OpenGL shading language), v330, core=we can't use deprecated functions (so we are essentially using "latest&greates").
 		"\n" // newline for aestetics
-		"layout(location = 0) in vec4 position;" // index of 1st attribute in glVertexAttribPointer(...)... HAS to be vec4 eventually, evenn though our glVertexAttribPointer(...) indicates '2' as # of components to attribute. 
+		"layout(location = 0) in vec4 position;" // index of 1st attribute in glVertexAttribPointer(...)... HAS to be vec4 eventually, evenn though our glVertexAttribPointer(...) indicates '2' as # of components to attribute.
 		"\n"
 		"void main()\n"
 		"{\n"
@@ -191,7 +211,7 @@ int main(void)
 	string fragmentShader =
 		"#version 330 core\n" // GLSL (OpenGL shading language), v330, core=we can't use deprecated functions (so we are essentially using "latest&greates").
 		"\n" // newline for aestetics
-		"layout(location = 0) out vec4 color;" // index of 1st attribute in glVertexAttribPointer(...)... HAS to be vec4 eventually, evenn though our glVertexAttribPointer(...) indicates '2' as # of components to attribute. 
+		"layout(location = 0) out vec4 color;" // index of 1st attribute in glVertexAttribPointer(...)... HAS to be vec4 eventually, evenn though our glVertexAttribPointer(...) indicates '2' as # of components to attribute.
 		"\n"
 		"void main()\n"
 		"{\n"
@@ -230,7 +250,10 @@ int main(void)
 #ifdef GLEW /* DRAW USING GLEW */
 		//glDrawArrays(GL_TRIANGLES, 0, 6); // Drawing a GL_TRIANGLES, beginning at vertex#0 (the 1st one), and 3 vertexes ('cuz this is a triangle).
 			// This will KNOW to draw our PARTICULAR triangle due to the "glBindBuffer(GL_ARRAY_BUFFER, buffer);" statement prior this loop.
-		glDrawElements(GL_TRIANGLES, 6/*indices*/, GL_UNSIGNED_INT /*typeOf data in the indeces buffer*/ , nullptr/*we did a 'glBindBuffer()' to 'ibo' so no need to explicitly specify anything here.*/);
+		// AM NOW USING THE PRESENTER'S ERROR CHECKING MECHANISMS...
+		//GLClearError(); // Just inseting error-checking code fro the error-checcing video...
+		GLCall( glDrawElements(GL_TRIANGLES, 6/*indices*/, GL_UNSIGNED_INT /*typeOf data in the indeces buffer*/, nullptr/*we did a 'glBindBuffer()' to 'ibo' so no need to explicitly specify anything here.*/) );
+		//ASSERT(GLLogCall()); // Just inseting error-checking code fro the error-checcing video...
 #endif // GLEW
 
 		/* Swap front and back buffers */
