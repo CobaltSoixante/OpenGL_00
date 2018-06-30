@@ -10,6 +10,7 @@ I will have to check with him if it is OK for me to check this material into Git
 16/06/2018 (Sat) - Index Buffers: how every thing in OpenGL is based on TRIANGLES (even if they are SQUARES or 3D), and our "plight" to reduce our vertixes ti "index buffers".
 23/06/2018 (Sat) - Dealing with errors in OpenGL.
 23/06/2018 (Sat_ - USING "UNIFORM" VARIABLES IN SHADERS.
+30/06/2018 (Sat) - VERTEX arrays in OpenGL.
 */
 
 #include <GL/glew.h>
@@ -135,6 +136,12 @@ int main(void)
 	if (!glfwInit())
 		return -1;
 
+	/* VertexArrays in OpenGL: CREATE A CONTEXT: OK, here we are getting padantic... Setting to ver 3.3...*/
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE); // Yeahy, this whit doesn't work anymore with VertexArrays
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE); // VertexArrays in OpenGL: CREATE A CONTEXT
+
 	/* Create a windowed mode window and its OpenGL context */
 	window = glfwCreateWindow(640, 480, "Hello World", NULL, NULL);
 	if (!window)
@@ -180,21 +187,26 @@ int main(void)
 		2, 3, 0, // 2nd triangle (on left)
 	};
 
+	//VERTEX arrays in OpenGL: Yey! GENERATE a vertaxex array object:
+	unsigned int vao;
+	GLCall(glGenVertexArrays(1, &vao));
+	GLCall(glBindVertexArray(vao)); // Bind the vertex array.
+
 	// GLEW: see documentation on docs.gl
 	unsigned int buffer;
-	glGenBuffers(1, &buffer); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
-	glBindBuffer(GL_ARRAY_BUFFER, buffer); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
-	glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW); // Specify how LARGE the buffer will be (6 floats); GL_STATIC_DRAW - means contents will be modified once & used many times.
+	GLCall(glGenBuffers(1, &buffer)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
+	GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
+	GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW)); // Specify how LARGE the buffer will be (6 floats); GL_STATIC_DRAW - means contents will be modified once & used many times.
 
-	glEnableVertexAttribArray(0); // Enable vertex #0.
-	glVertexAttribPointer(
+	GLCall(glEnableVertexAttribArray(0)); // Enable vertex #0.
+	GLCall(glVertexAttribPointer(
 		0,	// Index 0: 1st attribute
 		2,	// # of compoenents per attribute
 		GL_FLOAT,	// type of data
 		GL_FALSE,	// FALSE: we don't want these to be normalized, thay are ALREADY floats...
 		sizeof(float) * 2,	// STRIDE: number of vytes between each vertex. (= how many bytes to go to get to the next vertex).
 		0			// Point/index to First attribute
-	);
+	));
 
 	/* SQUARE */
 	unsigned int ibo; // IBO = Index Buffer Object
@@ -241,6 +253,12 @@ int main(void)
 	//GLCall(glUniform4f(location, 0.2, 0.3, 0.8, 1.0));  // set my uniform variable with the sam BLUE color my "FRAGMENT" shader had originally hard-coded.
 	GLCall(glUniform4f(location, 0.8f, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
 
+	// VERTEX ARRAYS IN OpenGL: UNBIND all our stuff in preparation of drawing:
+	GLCall(glBindVertexArray(0));
+	GLCall(glUseProgram(0));
+	GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
+	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+
 #endif // GLEW
 
 	// A couple of variables to "animate" the color in our "for-loop" and make it more exciting.
@@ -250,7 +268,31 @@ int main(void)
 	while (!glfwWindowShouldClose(window))
 	{
 		/* Render here */
-		glClear(GL_COLOR_BUFFER_BIT);
+		GLCall(glClear(GL_COLOR_BUFFER_BIT));
+
+		// VERTEX ARRAYS IN OpenGL: REBIND THE WHOLE FUCKING SHIT AGAIN:
+		GLCall(glUseProgram(shader));
+		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
+
+		GLCall(glBindVertexArray(vao));
+		GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, buffer));
+		// REENABLE the fucking crap we had already set up prior this f'ing WHILE loop:
+		/* VERTEX arrays in OpenGL: We no longer need this shit
+		GLCall(glEnableVertexAttribArray(0)); // Enable vertex #0.
+		GLCall(glVertexAttribPointer(
+			0,	// Index 0: 1st attribute
+			2,	// # of compoenents per attribute
+			GL_FLOAT,	// type of data
+			GL_FALSE,	// FALSE: we don't want these to be normalized, thay are ALREADY floats...
+			sizeof(float) * 2,	// STRIDE: number of vytes between each vertex. (= how many bytes to go to get to the next vertex).
+			0			// Point/index to First attribute
+		));
+		*/
+
+		// VERTEX arrays in OpenGL: We no longer need this shit: BUT ACTUALLY: I ain't takin' this out: it get broke if I remove it:
+		GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo));
+
+
 
 #ifdef GLFW
 		/* DRAW TRIANGLE USING FGLW: AW: CUSTOM CODE FROM THE YOUTUBE */
@@ -265,8 +307,7 @@ int main(void)
 		//glDrawArrays(GL_TRIANGLES, 0, 6); // Drawing a GL_TRIANGLES, beginning at vertex#0 (the 1st one), and 3 vertexes ('cuz this is a triangle).
 			// This will KNOW to draw our PARTICULAR triangle due to the "glBindBuffer(GL_ARRAY_BUFFER, buffer);" statement prior this loop.
 		// AM NOW USING THE PRESENTER'S ERROR CHECKING MECHANISMS...
-		//GLClearError(); // Just inseting error-checking code fro the error-checcing video...
-		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
+		//GLClearError(); // Just inseting error-checking code from the error-checcing video...
 		GLCall( glDrawElements(GL_TRIANGLES, 6/*indices*/, GL_UNSIGNED_INT /*typeOf data in the indeces buffer*/, nullptr/*we did a 'glBindBuffer()' to 'ibo' so no need to explicitly specify anything here.*/) );
 
 		if (r > 1.0f)
