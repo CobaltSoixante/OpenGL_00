@@ -12,6 +12,7 @@ I will have to check with him if it is OK for me to check this material into Git
 23/06/2018 (Sat_ - USING "UNIFORM" VARIABLES IN SHADERS.
 30/06/2018 (Sat) - VERTEX arrays in OpenGL.
 9/07/2018 (Mon) - VERTEX arrays in OpenGL (going another round).
+10/07/2018 (Tue) - Abstracting into classes: add some annotations and minr code fixes.
 */
 
 #include <GL/glew.h>
@@ -27,6 +28,7 @@ using namespace std;
 // ... The upper-case 'GL' is an indication to US that this is our own custom code (as opposed to lower-case 'gl' which is the prefix for bona-fide OpenGL funcs).
 #define ASSERT(x) if(!(x)) __debugbreak();
 #define GLCall(x) /*'x' is a function call we call this macro with*/ \
+	GLClearError();\
 	x; /*Make the function call*/ \
 	ASSERT( GLLogCall(#x, __FILE__, __LINE__) )
 static void GLClearError(void) {
@@ -162,7 +164,9 @@ int main(void)
 	/*
 	SETUP GLEW data.
 	NOTE this is just state-machine data, the ORDER in which these statements are executed does not matter: they just APPLY DATA to our GLEW state-machine.
+	GLEW: see documentation on docs.gl
 	*/
+
 	if (glewInit() != GLEW_OK) // GLEW
 		cout << "glewInit() ERROR!" << endl;
 
@@ -171,12 +175,9 @@ int main(void)
 	// GLEW / VERTEX BUFFER EXERCISE:
 	// each line is a VERTEX (= a point):
 	float positions[] = {
-		/*TRIANGLE indexes*/ /*
-							 +0.0f,  +0.5f,
-							 - 0.5f, -0.5f,
-							 + 0.5f, -0.5f,
-							 */
-							 /*SQUARE indexes*/
+		/*TRIANGLE indexes*/
+		/* +0.0f,  +0.5f, - 0.5f, -0.5f, + 0.5f, -0.5f, */
+		/*SQUARE indexes*/
 		-0.5f, -0.5f, // 0 index
 		+0.5f, -0.5f, // 1 index
 		+0.5f,  +0.5f, // 2 index
@@ -188,17 +189,19 @@ int main(void)
 		2, 3, 0, // 2nd triangle (on left)
 	};
 
-	//VERTEX arrays in OpenGL: Yey! GENERATE a vertaxex array object:
+	//VERTEX ARRAY in OpenGL: Yey! GENERATE a vertxex array object:
 	unsigned int vao;
 	GLCall(glGenVertexArrays(1, &vao));
 	GLCall(glBindVertexArray(vao)); // Bind the vertex array.
 
-									// GLEW: see documentation on docs.gl
+	// Our VERTEX BUFFER: Takes in our POSITIONS ("positions") array:
 	unsigned int buffer;
 	GLCall(glGenBuffers(1, &buffer)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
 	GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
 	GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW)); // Specify how LARGE the buffer will be (6 floats); GL_STATIC_DRAW - means contents will be modified once & used many times.
 
+	// OUR "Vertex Attribute" STUFF, WHICH IS THE ACTUAL LAYOUT OF OUR VERTEX BUFFER:
+	// WILL BE DEALT WITH IN THE "VERTAX ARRAY" ("vao") WHEN WE BREAK THIS DOWN TO CLASSES.
 	GLCall(glEnableVertexAttribArray(0)); // Enable vertex #0.
 	GLCall(glVertexAttribPointer( // BIND this IndexArray to the GLArrayBuffer (==links "buffer" with "vao")
 		0,	// Index 0 of the VERTEX array: 1st attribute
@@ -209,7 +212,7 @@ int main(void)
 		0			// Point/index to First attribute
 	));
 
-	/* SQUARE */
+	// OUR INDEX BUFFER (SQUARE)
 	unsigned int ibo; // IBO = Index Buffer Object
 	GLCall(glGenBuffers(1, &ibo)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
 	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
