@@ -14,6 +14,8 @@ I will have to check with him if it is OK for me to check this material into Git
 9/07/2018 (Mon) - VERTEX arrays in OpenGL (going another round).
 10/07/2018 (Tue) - Abstracting into classes: add some annotations and minr code fixes.
 11/07/2018 (Thu) - A bit more annotations before start to break into classes.
+11/07/2018 (thu) - BREAK INTO CLASSES: we start with VERTEX-BUFFR and INDEX-BUFFER (VERTEX-ARRAY(vao) is left for another "episode, because it is complex, and involves the SHADERS).
+11/07/2018 (Thu) - Add the INDEX and Array CLASSES buffers to the application.
 */
 
 #include <GL/glew.h>
@@ -25,25 +27,11 @@ I will have to check with him if it is OK for me to check this material into Git
 #include <sstream> // This is so our "ParseShader" function can create our shader programs for us.
 using namespace std;
 
-// Just inseting error-checking code fro the error-checcing video...
-// ... The upper-case 'GL' is an indication to US that this is our own custom code (as opposed to lower-case 'gl' which is the prefix for bona-fide OpenGL funcs).
-#define ASSERT(x) if(!(x)) __debugbreak();
-#define GLCall(x) /*'x' is a function call we call this macro with*/ \
-	GLClearError();\
-	x; /*Make the function call*/ \
-	ASSERT( GLLogCall(#x, __FILE__, __LINE__) )
-static void GLClearError(void) {
-	while (glGetError() != GL_NO_ERROR);
-}
-static bool GLLogCall(const char* function, const char* file, const int line) {
-	while (GLenum error = glGetError() != GL_NO_ERROR)
-	{
-		cout << "[OpenGL Error] " << '(' << error << ')' << "=(0x" << hex << error << ')'
-			<< function << ' ' << file << ':' << line << endl;
-		return false;
-	}
-	return true;
-}
+#include "Renderer.h"
+
+// 12/07/2018 (Thu) - start getting our CLASS dichotomy in place, starting with the VERTEX & INDEX buffers:
+#include "VertexBuffer.h"
+#include "IndexBuffer.h"
 
 struct ShaderProgramSource {
 	string VertexSource;
@@ -185,6 +173,7 @@ int main(void)
 		-0.5f, +0.5f, // 3 index
 	};
 
+	// INDEX BUFFER (the triangles composing or OpenGL shape):
 	unsigned int indices[] = {
 		0, 1, 2, // 1st triangle (on right)
 		2, 3, 0, // 2nd triangle (on left)
@@ -196,10 +185,14 @@ int main(void)
 	GLCall(glBindVertexArray(vao)); // Bind the vertex array.
 
 	// Our VERTEX BUFFER: Takes in our FLOAT POSITIONS ("positions") array:
+	VertexBuffer vb(positions, sizeof(positions)); // 12/07/2018 (Thu): we use our new Classes for this.
+		// This is actually "binded" for us in the construter. so - theoretically - nwe don't need to call "vb.bind()". BUT: we will need to if we bind additional "positions" along the way.
+	/* WE NO LONGER NEED THIS - this was our PRE-CLASS code:
 	unsigned int buffer;
 	GLCall(glGenBuffers(1, &buffer)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
 	GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
 	GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW)); // Specify how LARGE the buffer will be (6 floats); GL_STATIC_DRAW - means contents will be modified once & used many times.
+	*/
 
 	// OUR "Vertex Attribute" STUFF, WHICH IS THE ACTUAL LAYOUT OF OUR VERTEX BUFFER:
 	// WILL BE DEALT WITH IN THE "VERTAX ARRAY" CLASS ("vao") WHEN WE BREAK THIS DOWN TO CLASSES.
@@ -214,11 +207,13 @@ int main(void)
 	));
 
 	// OUR INDEX BUFFER (SQUARE)
+	IndexBuffer ib(indices, 6);
+	/* WE NO LONGER NEED THIS - this was our PRE-CLASS code:
 	unsigned int ibo; // IBO = Index Buffer Object
 	GLCall(glGenBuffers(1, &ibo)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
 	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
 	GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW)); // SEND DATA TO GPU.
-																							 
+	*/																							 
 																							 
 	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
 	cout << "VERTEX" << endl;
@@ -259,6 +254,9 @@ int main(void)
 		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
 
 		GLCall(glBindVertexArray(vao)); // BIND VERTEX ARRAY
+		//GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo)); // 12/07/2018: FUNNY: I never had this line in my code before, and it worked fine. Anyways, now we's movin' to "classes this line is getting yanked out...
+			// ... and replace by the following line:
+		ib.Bind();
 
 #ifdef GLFW
 		/* DRAW TRIANGLE USING FGLW: AW: CUSTOM CODE FROM THE YOUTUBE */
