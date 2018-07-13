@@ -163,6 +163,8 @@ int main(void)
 
 	// GLEW / VERTEX BUFFER EXERCISE:
 	// each line is a VERTEX (= a point):
+	// Our application MAY typically have ONE CENTRAL VERTEX BUFFER - EG, if we are defining a SPACESHIP shape, it will encompass the
+	// ENTIRE spaceship: EG metal wings, metal hub, tranparent windows - etc.
 	float positions[] = {
 		/*TRIANGLE indexes*/
 		/* +0.0f,  +0.5f, - 0.5f, -0.5f, + 0.5f, -0.5f, */
@@ -174,25 +176,26 @@ int main(void)
 	};
 
 	// INDEX BUFFER (the triangles composing or OpenGL shape):
+	// There may be MANY INDEX-BUFFERS to a VERTEX-BUFFER - each INDEX-BUFFER defining a SEGMENT of the global VERTEX-BUFFER -
+	// EG if the VERTEX-BUFFER defines a SPACESHIP - each INDEX-BUFFER describes a SECTION of that SPACESHIP -
+	// EG metal wings, metal hub, tranparent windows - etc.
 	unsigned int indices[] = {
 		0, 1, 2, // 1st triangle (on right)
 		2, 3, 0, // 2nd triangle (on left)
 	};
 
-	//VERTEX ARRAY in OpenGL: Yey! GENERATE a vertxex array object:
+	//VERTEX ARRAY in OpenGL: Connects a VERTEX-BUFFER with "some kind of" LAYOUT:
+	//THE LAYOUT is'nt terribly necessary, but is convenient for DEBUGGING stuff on the CPU (though we COULD debug this stuff on the GPU, if we wanted).
 	unsigned int vao;
 	GLCall(glGenVertexArrays(1, &vao));
 	GLCall(glBindVertexArray(vao)); // Bind the vertex array.
 
 	// Our VERTEX BUFFER: Takes in our FLOAT POSITIONS ("positions") array:
+	// The VERTEX-BUFFER is actually just a "stupid" lump of data: it doesn't have a notion of what KIND or TYPE of data it represents:
+	// We rely on the VERTEX-ARRAY to associate the VERTEX-BUFFER with some kind of LAYOUT...
+	// EG
 	VertexBuffer vb(positions, sizeof(positions)); // 12/07/2018 (Thu): we use our new Classes for this.
 		// This is actually "binded" for us in the construter. so - theoretically - nwe don't need to call "vb.bind()". BUT: we will need to if we bind additional "positions" along the way.
-	/* WE NO LONGER NEED THIS - this was our PRE-CLASS code:
-	unsigned int buffer;
-	GLCall(glGenBuffers(1, &buffer)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
-	GLCall(glBindBuffer(GL_ARRAY_BUFFER, buffer)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
-	GLCall(glBufferData(GL_ARRAY_BUFFER, sizeof(positions), positions, GL_STATIC_DRAW)); // Specify how LARGE the buffer will be (6 floats); GL_STATIC_DRAW - means contents will be modified once & used many times.
-	*/
 
 	// OUR "Vertex Attribute" STUFF, WHICH IS THE ACTUAL LAYOUT OF OUR VERTEX BUFFER:
 	// WILL BE DEALT WITH IN THE "VERTAX ARRAY" CLASS ("vao") WHEN WE BREAK THIS DOWN TO CLASSES.
@@ -208,12 +211,6 @@ int main(void)
 
 	// OUR INDEX BUFFER (SQUARE)
 	IndexBuffer ib(indices, 6);
-	/* WE NO LONGER NEED THIS - this was our PRE-CLASS code:
-	unsigned int ibo; // IBO = Index Buffer Object
-	GLCall(glGenBuffers(1, &ibo)); // 1 = how many buffers we want; the OpenGL ID of the buffer will be droppen into &buffer.
-	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo)); // GL_ARRAY_BUFFER - means this is simply a buffer of memory. (We haven't even specified how LARGE this buffer will be).
-	GLCall(glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW)); // SEND DATA TO GPU.
-	*/																							 
 																							 
 	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
 	cout << "VERTEX" << endl;
