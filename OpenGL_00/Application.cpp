@@ -16,6 +16,7 @@ I will have to check with him if it is OK for me to check this material into Git
 11/07/2018 (Thu) - A bit more annotations before start to break into classes.
 11/07/2018 (thu) - BREAK INTO CLASSES: we start with VERTEX-BUFFR and INDEX-BUFFER (VERTEX-ARRAY(vao) is left for another "episode, because it is complex, and involves the SHADERS).
 11/07/2018 (Thu) - Add the INDEX and Array CLASSES buffers to the application.
+14/07/2018 (Sat) - Add the VertexArray and VertexBufferLayout CLASS abstraction.
 */
 
 #include <GL/glew.h>
@@ -32,6 +33,7 @@ using namespace std;
 // 12/07/2018 (Thu) - start getting our CLASS dichotomy in place, starting with the VERTEX & INDEX buffers:
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
+#include "VertexArray.h"
 
 struct ShaderProgramSource {
 	string VertexSource;
@@ -194,23 +196,16 @@ int main(void)
 	// The VERTEX-BUFFER is actually just a "stupid" lump of data: it doesn't have a notion of what KIND or TYPE of data it represents:
 	// We rely on the VERTEX-ARRAY to associate the VERTEX-BUFFER with some kind of LAYOUT...
 	// EG
+	VertexArray va; // DEFINE OUR "wrapper" VERTEX ARRAY OBJECT
 	VertexBuffer vb(positions, sizeof(positions)); // 12/07/2018 (Thu): we use our new Classes for this.
 		// This is actually "binded" for us in the construter. so - theoretically - nwe don't need to call "vb.bind()". BUT: we will need to if we bind additional "positions" along the way.
 
-	// OUR "Vertex Attribute" STUFF, WHICH IS THE ACTUAL LAYOUT OF OUR VERTEX BUFFER:
-	// WILL BE DEALT WITH IN THE "VERTAX ARRAY" CLASS ("vao") WHEN WE BREAK THIS DOWN TO CLASSES.
-	GLCall(glEnableVertexAttribArray(0)); // Enable vertex #0.
-	GLCall(glVertexAttribPointer( // BIND this IndexArray to the GLArrayBuffer (==links "buffer" with "vao")
-		0,	// Index 0 of the VERTEX array: 1st attribute
-		2,	// # of compoenents per attribute
-		GL_FLOAT,	// type of data
-		GL_FALSE,	// FALSE: we don't want these to be normalized, thay are ALREADY floats...
-		sizeof(float) * 2,	// STRIDE: number of vytes between each vertex. (= how many bytes to go to get to the next vertex).
-		0			// Point/index to First attribute
-	));
+	// LAYOUT:
+	VertexBufferLayout layout;
+	layout.Push<float>(2);
+	va.AddBuffer(vb, layout);
 
-	// OUR INDEX BUFFER (SQUARE)
-	IndexBuffer ib(indices, 6);
+	IndexBuffer ib(indices, 6); // OUR INDEX BUFFER (SQUARE made of 2 triangles)
 																							 
 	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
 	cout << "VERTEX" << endl;
@@ -250,9 +245,7 @@ int main(void)
 		GLCall(glUseProgram(shader));
 		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
 
-		GLCall(glBindVertexArray(vao)); // BIND VERTEX ARRAY
-		//GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo)); // 12/07/2018: FUNNY: I never had this line in my code before, and it worked fine. Anyways, now we's movin' to "classes this line is getting yanked out...
-			// ... and replace by the following line:
+		va.Bind(); // BIND VERTEX ARRAY
 		ib.Bind();
 
 #ifdef GLFW

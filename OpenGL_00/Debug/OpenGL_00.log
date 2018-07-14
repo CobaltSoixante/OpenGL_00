@@ -1,3 +1,12 @@
-﻿  Application.cpp
+﻿  VertexBufferLayout.cpp
+  VertexBuffer.cpp
+  VertexArray.cpp
+  Renderer.cpp
+  IndexBuffer.cpp
+  Application.cpp
+  Generating Code...
+LINK : warning LNK4098: defaultlib 'MSVCRT' conflicts with use of other libs; use /NODEFAULTLIB:library
+LINK : warning LNK4098: defaultlib 'LIBCMT' conflicts with use of other libs; use /NODEFAULTLIB:library
+glew32s.lib(glew.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'glew32s.lib(glew.obj)' or at 'C:\Users\adam\Documents\Visual Studio 2017\Projects\OpenGL_00\Debug\vc120.pdb'; linking object as if no debug info
   OpenGL_00.vcxproj -> C:\Users\adam\Documents\Visual Studio 2017\Projects\OpenGL_00\Debug\OpenGL_00.exe
   OpenGL_00.vcxproj -> C:\Users\adam\Documents\Visual Studio 2017\Projects\OpenGL_00\Debug\OpenGL_00.pdb (Partial PDB)
