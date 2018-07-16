@@ -17,6 +17,7 @@ I will have to check with him if it is OK for me to check this material into Git
 11/07/2018 (thu) - BREAK INTO CLASSES: we start with VERTEX-BUFFR and INDEX-BUFFER (VERTEX-ARRAY(vao) is left for another "episode, because it is complex, and involves the SHADERS).
 11/07/2018 (Thu) - Add the INDEX and Array CLASSES buffers to the application.
 14/07/2018 (Sat) - Add the VertexArray and VertexBufferLayout CLASS abstraction.
+15/07/2018 (Sun) - Shader abstraction: the 'Shader' class.
 */
 
 #include <GL/glew.h>
@@ -34,96 +35,14 @@ using namespace std;
 #include "VertexBuffer.h"
 #include "IndexBuffer.h"
 #include "VertexArray.h"
-
-struct ShaderProgramSource {
-	string VertexSource;
-	string FragmentSource;
-};
-static ShaderProgramSource ParseShader(
-	const string& filepath // Name of the shader program file we invented.
-)
-{
-	ifstream stream(filepath);
-	enum class ShaderType
-	{
-		NONE = -1, VERTEX = 0, FRAGMENT = 1,
-	};
-	string line;
-	stringstream ss[2];
-	ShaderType type = ShaderType::NONE;
-	while (getline(stream, line)) {
-		if (line.find("#shader") != string::npos) { // Fileter out this fake "#shader ..." syntax we "invented"... 
-			if (line.find("vertex") != string::npos)
-				type = ShaderType::VERTEX;
-			else if (line.find("fragment") != string::npos)
-				type = ShaderType::FRAGMENT;
-		}
-		else {
-			ss[(int(type))] << line << '\n';
-		}
-	}
-
-	return { ss[0].str(), ss[1].str() };
-}
-
-static unsigned int CompileShader(unsigned int type, const string& source) {
-	unsigned int id = glCreateShader(type);
-	const char* src = source.c_str();
-	glShaderSource(id, 1, &src, nullptr); // id of shader, only 1 shader code source, &src (for some reason), array of string lengths (nullptr assumes that each string is nul-terminated).
-	glCompileShader(id); // Compile the shader code.
-
-						 // Error Handling
-	int result;
-	glGetShaderiv(id, GL_COMPILE_STATUS, &result);
-	if (result == GL_FALSE) {
-		// Get the error message
-		int length; // error message length.
-		glGetShaderiv(id, GL_INFO_LOG_LENGTH, &length);
-		char* message = (char*)alloca(length * sizeof(char));
-		glGetShaderInfoLog(id, length, &length, message); // GOD only knows why it wants the 'length' and the POINTER to the 'length'.
-		cout
-			<< "Failed to compile shader of type "
-			<< (type == GL_VERTEX_SHADER ? "vertex" : "fragment")
-			<< endl;
-		cout << message << endl;
-		glDeleteShader(id); // Delete it: it failed anyway.
-		return 0;
-	}
-
-	return id;
-}
-
-// Shader Function (the in return-code is the OpenGL ID for our compiled shader).
-static unsigned int CreateShader(const string& vertexShader, const string& fragmentShader) {
-	unsigned int program = glCreateProgram(); // Create the combined shader program.
-
-											  // Create the 2 shaders:
-	unsigned int vs = CompileShader(GL_VERTEX_SHADER, vertexShader);
-	unsigned int fs = CompileShader(GL_FRAGMENT_SHADER, fragmentShader);
-
-	// Attach the 2 above shaders to our program:
-	glAttachShader(program, vs);
-	glAttachShader(program, fs);
-	glLinkProgram(program); // LINK the program
-	glValidateProgram(program); // VALIDATE the program.
-
-								// NOW that our shaders have been "compiled"/"baked" into a "program" - we can DELETE them -
-								// much as we can delete object files after they have been linked into a final executable.
-	glDeleteShader(vs);
-	glDeleteShader(fs);
-
-	// TECHNICALLY, we should call glDetachShader() at this point but few developers or game engines bother -
-	// the memory gain is miniscule, and the source-code lost is a valuable debug-tool if problems arise.
-
-	return program;
-}
+#include "Shader.h"
 
 
 int main(void)
 {
 	GLFWwindow* window;
 
-	//#define GLFW
+//#define GLFW
 #define GLEW
 
 	/* Initialize the library (required for BOTH GLFW & GLEW) */
@@ -206,31 +125,18 @@ int main(void)
 	va.AddBuffer(vb, layout);
 
 	IndexBuffer ib(indices, 6); // OUR INDEX BUFFER (SQUARE made of 2 triangles)
+
+	Shader shader("res/shaders/Basic.shader");
+	shader.Bind();
+	shader.Setuniform4f("u_Color", 0.8f, 0.3f, 0.8f, 1.0f);
 																							 
-	ShaderProgramSource source = ParseShader("res/shaders/Basic.shader");
-	cout << "VERTEX" << endl;
-	cout << source.VertexSource << endl;
-	cout << "FRAGMENT" << endl;
-	cout << source.FragmentSource << endl;
-	//unsigned int shader = CreateShader(vertexShader, fragmentShader);
-	//glUseProgram(shader); // Bind our shader.
-	//unsigned int shader = CreateShader(vertexShader, fragmentShader);
-	unsigned int shader = CreateShader(source.VertexSource, source.FragmentSource);
-	GLCall(glUseProgram(shader)); // Bind our shader.
-
-								  // USING "UNIFORM" VARIABLES IN SHADERS:
-	GLCall(int location = glGetUniformLocation(shader, "u_Color")); // retrieve the location/reference of the custom "u_Color" variable I created.
-	ASSERT(-1 != location); // Ensure the Uniform "u_Color" variable actually exists (it doesn't always have to, if we didn't explicitly USE it in our shader code).
-							//GLCall(glUniform4f(location, 0.2, 0.3, 0.8, 1.0));  // set my uniform variable with the sam BLUE color my "FRAGMENT" shader had originally hard-coded.
-	GLCall(glUniform4f(location, 0.8f, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
-
-	// VERTEX ARRAYS IN OpenGL: UNBIND all our stuff in preparation of drawing:
-	GLCall(glBindVertexArray(0));
-	GLCall(glUseProgram(0));
-	GLCall(glBindBuffer(GL_ARRAY_BUFFER, 0));
-	GLCall(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
-
 #endif // GLEW
+
+	// 14/07/2018 (Sat):
+	va.Unbind();
+	vb.Unbind();
+	ib.Unbind();
+	shader.Unbind();
 
 	// A couple of variables to "animate" the color in our "for-loop" and make it more exciting.
 	float r = 0.0f;
@@ -241,9 +147,8 @@ int main(void)
 		/* Render here */
 		GLCall(glClear(GL_COLOR_BUFFER_BIT));
 
-		// VERTEX ARRAYS IN OpenGL: REBIND THE WHOLE FUCKING SHIT AGAIN:
-		GLCall(glUseProgram(shader));
-		GLCall(glUniform4f(location, r, 0.3f, 0.8f, 1.0f));  // Let's make it pink...
+		shader.Bind();
+		shader.Setuniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
 
 		va.Bind(); // BIND VERTEX ARRAY
 		ib.Bind();
@@ -279,11 +184,6 @@ int main(void)
 		/* Poll for and process events */
 		glfwPollEvents();
 	}
-
-#ifdef GLEW // For good measure:
-	//glDeleteShader(shader); // this should actually be glDeleteProgram(shader);
-	glDeleteProgram(shader);
-#endif GLEW
 
 	glfwTerminate();
 	return 0;
