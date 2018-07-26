@@ -18,6 +18,8 @@ I will have to check with him if it is OK for me to check this material into Git
 11/07/2018 (Thu) - Add the INDEX and Array CLASSES buffers to the application.
 14/07/2018 (Sat) - Add the VertexArray and VertexBufferLayout CLASS abstraction.
 15/07/2018 (Sun) - Shader abstraction: the 'Shader' class.
+26/07/2018 (Thus) - Add the Randerer class - renderer.Draw(va, ib, shader); - this simply incorporates our Vertex-Array, Index-Buffer (defines triangles), Shader (makes the colors chage).
+
 */
 
 #include <GL/glew.h>
@@ -33,6 +35,7 @@ using namespace std;
 
 // 12/07/2018 (Thu) - start getting our CLASS dichotomy in place, starting with the VERTEX & INDEX buffers:
 #include "VertexBuffer.h"
+#include "VertexBufferLayout.h"
 #include "IndexBuffer.h"
 #include "VertexArray.h"
 #include "Shader.h"
@@ -43,7 +46,7 @@ int main(void)
 	GLFWwindow* window;
 
 //#define GLFW
-#define GLEW
+//#define GLEW // I AM ONLY USING GLEW NOW - AM getting rid of extranious definitions.
 
 	/* Initialize the library (required for BOTH GLFW & GLEW) */
 	if (!glfwInit())
@@ -70,7 +73,6 @@ int main(void)
 	this is for when we do the UNIFORM variable tutorial, so our color-change animation changes at a reasonable/aesthetic rate. */
 	glfwSwapInterval(1);
 
-#ifdef GLEW
 	/*
 	SETUP GLEW data.
 	NOTE this is just state-machine data, the ORDER in which these statements are executed does not matter: they just APPLY DATA to our GLEW state-machine.
@@ -130,13 +132,13 @@ int main(void)
 	shader.Bind();
 	shader.Setuniform4f("u_Color", 0.8f, 0.3f, 0.8f, 1.0f);
 																							 
-#endif // GLEW
-
 	// 14/07/2018 (Sat):
 	va.Unbind();
 	vb.Unbind();
 	ib.Unbind();
 	shader.Unbind();
+
+	Renderer renderer;
 
 	// A couple of variables to "animate" the color in our "for-loop" and make it more exciting.
 	float r = 0.0f;
@@ -145,38 +147,19 @@ int main(void)
 	while (!glfwWindowShouldClose(window))
 	{
 		/* Render here */
-		GLCall(glClear(GL_COLOR_BUFFER_BIT));
+		renderer.Clear(); // We clear the screen - if we want...
 
 		shader.Bind();
 		shader.Setuniform4f("u_Color", r, 0.3f, 0.8f, 1.0f);
 
-		va.Bind(); // BIND VERTEX ARRAY
-		ib.Bind();
+		renderer.Draw(va, ib, shader); // This is where we are drawing our rectangle.
 
-#ifdef GLFW
-		/* DRAW TRIANGLE USING FGLW: AW: CUSTOM CODE FROM THE YOUTUBE */
-		glBegin(GL_TRIANGLES);
-		glVertex2f(+0.0f, +0.5f); // TOP point
-		glVertex2f(-0.5f, -0.5f); // LEFT bottom point
-		glVertex2f(+0.5f, -0.5f); // RIGHT bottom point
-		glEnd();
-#endif // GLFW
-
-#ifdef GLEW /* DRAW USING GLEW */
-		//glDrawArrays(GL_TRIANGLES, 0, 6); // Drawing a GL_TRIANGLES, beginning at vertex#0 (the 1st one), and 3 vertexes ('cuz this is a triangle).
-		// This will KNOW to draw our PARTICULAR triangle due to the "glBindBuffer(GL_ARRAY_BUFFER, buffer);" statement prior this loop.
-		// AM NOW USING THE PRESENTER'S ERROR CHECKING MECHANISMS...
-		//GLClearError(); // Just inseting error-checking code from the error-checcing video...
-		GLCall(glDrawElements(GL_TRIANGLES, 6/*indices*/, GL_UNSIGNED_INT /*typeOf data in the indeces buffer*/, nullptr/*we did a 'glBindBuffer()' to 'ibo' so no need to explicitly specify anything here.*/));
-
+		// This is where we are adjusting the "uniform" variable in the shader that changes the colour of the rectangle.
 		if (r > 1.0f)
 			increment = -0.05f;
 		if (r < 0.0f)
 			increment = +0.05f;
 		r += increment;
-
-		//ASSERT(GLLogCall()); // Just inseting error-checking code fro the error-checcing video...
-#endif // GLEW
 
 		/* Swap front and back buffers */
 		glfwSwapBuffers(window);

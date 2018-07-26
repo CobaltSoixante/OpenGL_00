@@ -18,6 +18,10 @@ bool GLLogCall(const char* function, const char* file, const int line)
 	return true;
 }
 
+void Renderer::Clear() const
+{
+	GLCall(glClear(GL_COLOR_BUFFER_BIT));
+}
 
 Renderer::Renderer()
 {
@@ -26,4 +30,14 @@ Renderer::Renderer()
 
 Renderer::~Renderer()
 {
+}
+
+void Renderer::Draw(const VertexArray & va, const IndexBuffer & ib, const Shader & shader) const
+{
+	shader.Bind();
+	va.Bind(); // BIND VERTEX ARRAY
+	ib.Bind();
+
+	// DRAW THE TRIANGLES DEFINED IN OUR INDEX=-BUFFER:
+	GLCall(glDrawElements(GL_TRIANGLES, ib.getCount() /*indices*/, GL_UNSIGNED_INT /*typeOf data in the indeces buffer*/, nullptr/*we did a 'glBindBuffer()' to 'ibo' so no need to explicitly specify anything here.*/));
 }

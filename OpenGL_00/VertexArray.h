@@ -10,7 +10,7 @@ NOW, JUST REMEMBER: VERTEX-ARRAYS are actually A NATIVE construct of OpenGL: the
 */
 
 #include "VertexBuffer.h"
-#include "VertexBufferLayout.h"
+class VertexBufferLayout; //#include "VertexBufferLayout.h"
 
 class VertexArray
 {
